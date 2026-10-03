@@ -58,4 +58,4 @@ distributable archive.
 
 ## License
 
-MIT; see [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+MIT; see [LICENSE](LICENSE). Third-party licenses are under `licenses/`.

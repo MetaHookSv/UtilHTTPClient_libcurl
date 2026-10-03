@@ -50,4 +50,4 @@ MetaHook 接口代码和 ScopeExit；可通过
 
 ## 许可证
 
-MIT，见 [LICENSE](LICENSE) 和 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
+MIT，见 [LICENSE](LICENSE)。第三方许可证位于 `licenses/` 目录。

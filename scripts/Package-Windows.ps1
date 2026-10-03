@@ -6,7 +6,7 @@ $installDirectory = (Resolve-Path -LiteralPath $InstallRoot).Path
 foreach ($required in @('libcurl.dll', 'svencoop/metahook/dlls/UtilHTTPClient_libcurl.dll',
     'svencoop/metahook/dlls/UtilHTTPClient_libcurl.pdb', 'include/Interface/IUtilHTTPClient.h',
     'include/HLSDK/common/interface.h', 'README.md', 'README.zh-CN.md', 'LICENSE',
-    'THIRD-PARTY-NOTICES.md', 'licenses/curl/COPYING', 'licenses/ScopeExit/LICENSE',
+    'licenses/curl/COPYING', 'licenses/ScopeExit/LICENSE',
     'licenses/MetaHook/LICENSE', 'licenses/HLSDK/interface.h', 'licenses/VC-LTL/LICENSE')) {
     if (-not (Test-Path -LiteralPath (Join-Path $installDirectory $required) -PathType Leaf)) {
         throw "Install tree is missing $required."

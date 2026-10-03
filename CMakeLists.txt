@@ -48,7 +48,7 @@ install(FILES "$<TARGET_PDB_FILE:UtilHTTPClient_libcurl>" DESTINATION svencoop/m
 install(FILES "$<TARGET_FILE:libcurl_shared>" DESTINATION .)
 install(FILES include/Interface/IUtilHTTPClient.h DESTINATION include/Interface)
 install(FILES "${METAHOOK_SOURCE_PATH}/include/HLSDK/common/interface.h" DESTINATION include/HLSDK/common)
-install(FILES README.md README.zh-CN.md LICENSE THIRD-PARTY-NOTICES.md DESTINATION .)
+install(FILES README.md README.zh-CN.md LICENSE DESTINATION .)
 install(FILES "${CURL_SOURCE_PATH}/COPYING" DESTINATION licenses/curl)
 install(FILES "${SCOPEEXIT_SOURCE_PATH}/LICENSE" DESTINATION licenses/ScopeExit)
 install(FILES "${METAHOOK_SOURCE_PATH}/LICENSE" DESTINATION licenses/MetaHook)
