@@ -5,13 +5,13 @@ if (-not $InstallRoot) { $InstallRoot = Join-Path $repositoryRoot 'install/x86/R
 $installDirectory = (Resolve-Path -LiteralPath $InstallRoot).Path
 foreach ($required in @('libcurl.dll', 'svencoop/metahook/dlls/UtilHTTPClient_libcurl.dll',
     'svencoop/metahook/dlls/UtilHTTPClient_libcurl.pdb', 'include/Interface/IUtilHTTPClient.h',
-    'include/HLSDK/common/interface.h', 'README.md', 'README.zh-CN.md', 'LICENSE',
-    'licenses/curl/COPYING', 'licenses/ScopeExit/LICENSE',
-    'licenses/MetaHook/LICENSE', 'licenses/HLSDK/interface.h', 'licenses/VC-LTL/LICENSE')) {
+    'include/HLSDK/common/interface.h')) {
     if (-not (Test-Path -LiteralPath (Join-Path $installDirectory $required) -PathType Leaf)) {
         throw "Install tree is missing $required."
     }
 }
+# Only the runtime payload ships; documentation and license texts stay out of the archive.
+$payload = @('libcurl.dll', 'svencoop', 'include')
 $sevenZip = (Get-Command 7z -ErrorAction Stop).Source
 $archiveDirectory = Join-Path $repositoryRoot 'build/artifacts'
 New-Item -ItemType Directory -Path $archiveDirectory -Force | Out-Null
@@ -19,7 +19,7 @@ $archivePath = Join-Path $archiveDirectory 'UtilHTTPClient_libcurl-windows-x86.7
 if (Test-Path -LiteralPath $archivePath -PathType Leaf) { Remove-Item -LiteralPath $archivePath }
 Push-Location -LiteralPath $installDirectory
 try {
-    & $sevenZip a -t7z $archivePath '.'
+    & $sevenZip a -t7z $archivePath @payload
     if ($LASTEXITCODE -ne 0) { throw "7z packaging failed ($LASTEXITCODE)." }
     & $sevenZip t $archivePath
     if ($LASTEXITCODE -ne 0) { throw "7z integrity check failed ($LASTEXITCODE)." }
