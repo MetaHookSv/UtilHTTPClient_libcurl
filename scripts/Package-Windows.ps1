@@ -4,14 +4,13 @@ $repositoryRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Pat
 if (-not $InstallRoot) { $InstallRoot = Join-Path $repositoryRoot 'install/x86/Release' }
 $installDirectory = (Resolve-Path -LiteralPath $InstallRoot).Path
 foreach ($required in @('libcurl.dll', 'svencoop/metahook/dlls/UtilHTTPClient_libcurl.dll',
-    'svencoop/metahook/dlls/UtilHTTPClient_libcurl.pdb', 'include/Interface/IUtilHTTPClient.h',
-    'include/HLSDK/common/interface.h')) {
+    'svencoop/metahook/dlls/UtilHTTPClient_libcurl.pdb')) {
     if (-not (Test-Path -LiteralPath (Join-Path $installDirectory $required) -PathType Leaf)) {
         throw "Install tree is missing $required."
     }
 }
-# Only the runtime payload ships; documentation and license texts stay out of the archive.
-$payload = @('libcurl.dll', 'svencoop', 'include')
+# Only the runtime payload ships; documentation, headers and license texts stay out of the archive.
+$payload = @('libcurl.dll', 'svencoop')
 $sevenZip = (Get-Command 7z -ErrorAction Stop).Source
 $archiveDirectory = Join-Path $repositoryRoot 'build/artifacts'
 New-Item -ItemType Directory -Path $archiveDirectory -Force | Out-Null

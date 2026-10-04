@@ -17,7 +17,9 @@
 
 * `libcurl.dll` 放在游戏可执行文件旁（Debug 为 `libcurl-d.dll`）。
 * `UtilHTTPClient_libcurl.dll` 与 PDB 放在 `svencoop/metahook/dlls`。
-* 公共头文件位于 `include/Interface` 和 `include/HLSDK/common`，使用者需将两者加入包含路径。
+
+压缩包仅含运行时负载。公共头文件位于仓库的 `include/Interface`（以及 MetaHook SDK 的
+`include/HLSDK/common`），使用者需将两者加入包含路径。
 
 加载 DLL 的 `CreateInterface`，请求 `UTIL_HTTPCLIENT_FACTORY_LIBCURL_INTERFACE_VERSION`，
 调用 `CreateUtilHTTPClient()`，再用有效的 `CUtilHTTPClientCreationContext` 调用 `Init()`。
@@ -50,4 +52,4 @@ MetaHook 接口代码和 ScopeExit；可通过
 
 ## 许可证
 
-MIT，见 [LICENSE](LICENSE)。第三方许可证位于 `licenses/` 目录。
+MIT，见 [LICENSE](LICENSE)。第三方许可证位于仓库的 `licenses/` 目录，发布压缩包仅含运行时负载。

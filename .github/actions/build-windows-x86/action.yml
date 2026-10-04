@@ -15,7 +15,7 @@ runs:
     - name: Build, test and install Release
       shell: cmd
       run: call scripts\build-UtilHTTPClient_libcurl-x86-Release.bat
-    - name: Package runtime, headers and notices
+    - name: Package runtime
       id: package
       shell: pwsh
       run: ./scripts/Package-Windows.ps1

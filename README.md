@@ -21,8 +21,10 @@ and copy its contents into the game directory:
 
 * `libcurl.dll` next to the game executable (`libcurl-d.dll` for Debug).
 * `UtilHTTPClient_libcurl.dll` and its PDB under `svencoop/metahook/dlls`.
-* Public headers under `include/Interface` and `include/HLSDK/common`; add both to a
-  consumer's include paths.
+
+The archive ships the runtime payload only. The public headers live in the repository's
+`include/Interface` (and the MetaHook SDK's `include/HLSDK/common`); add both to a
+consumer's include paths.
 
 Load the DLL through `CreateInterface`, request
 `UTIL_HTTPCLIENT_FACTORY_LIBCURL_INTERFACE_VERSION`, then call `CreateUtilHTTPClient()` and
@@ -58,4 +60,5 @@ distributable archive.
 
 ## License
 
-MIT; see [LICENSE](LICENSE). Third-party licenses are under `licenses/`.
+MIT; see [LICENSE](LICENSE). Third-party licenses are under `licenses/` in the repository;
+the release archive ships the runtime payload only.

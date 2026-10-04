@@ -116,7 +116,7 @@ Behaviour worth knowing:
 ## Repository layout
 
 - `src/UtilHTTPClient_libcurl.cpp`, `src/dllmain.cpp` — implementation and entry point.
-- `include/Interface/IUtilHTTPClient.h` — public header, installed for consumers.
+- `include/Interface/IUtilHTTPClient.h` — public header (shipped with the sources, not installed).
 - `tests/RegressionTests.cpp` — regression suite run by CTest.
 - `CMakeLists.txt`, `cmake/Curl.cmake`, `cmake/Dependencies.cmake`, `cmake/VCLTL.cmake` — build and
   dependency pinning (including the trimmed libcurl feature set).
@@ -136,13 +136,13 @@ Install output is `install/x86/<Configuration>/`:
 ```text
 libcurl.dll                                   (libcurl-d.dll for Debug, next to the game executable)
 svencoop/metahook/dlls/UtilHTTPClient_libcurl.dll + .pdb
-include/Interface/IUtilHTTPClient.h
-include/HLSDK/common/interface.h
-licenses/{curl,ScopeExit,MetaHook,HLSDK,VC-LTL}/
 ```
 
-Nothing is deployed into a game automatically. `scripts/Package-Windows.ps1` produces the
-distributable archive.
+The install rules for the public header, licenses and READMEs were removed, so the install tree
+and the release archive carry only this runtime payload. The public header lives in the
+repository's `include/Interface/`, and licenses stay in the repository's `licenses/`; neither is
+installed or packaged. Nothing is deployed into a game automatically.
+`scripts/Package-Windows.ps1` produces the distributable archive from `libcurl.dll` and `svencoop/`.
 
 ## Notes
 
@@ -177,4 +177,4 @@ distributable archive.
 
 `README.md` is the English landing page and `README.zh-CN.md` the Chinese one; both cover the quick
 start, the pinned dependency overrides and the known limitations. Third-party terms are under
-`licenses/`.
+`licenses/` in the repository; the release archive ships the runtime payload only.
