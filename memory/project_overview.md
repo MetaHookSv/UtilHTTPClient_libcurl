@@ -32,7 +32,8 @@ repository; notes here use the `utilhttpclient-libcurl` project and the
   `IUtilHTTPRequest`, `IUtilHTTPResponse`, `IUtilHTTPCallbacks`, `IURLParsedResult`,
   `CUtilHTTPClientCreationContext`, `UtilHTTPMethod`, `UtilHTTPRequestState`) and the version macros.
 - `tests/RegressionTests.cpp`: local-server regression tests (sockets + libcurl) exercised through
-  CTest.
+  CTest, including header buffer boundaries, binary/empty PUT bodies, and buffered/streaming
+  redirects with informational responses and repeated headers.
 
 Exported interfaces:
 
@@ -90,6 +91,14 @@ Behaviour worth knowing:
   `User-Agent` (overridable with `SetField`).
 - `Send()` only adds the easy handle to the multi handle and reports the `Requesting` state; nothing
   progresses until the host pumps `RunFrame()`.
+- PUT uses a custom method so `SetPostBody()` can copy the body without changing the wire method
+  to POST. The caller may overwrite the source buffer after setting it.
+- Each HTTP status line starts a fresh response-header block. Redirect and informational headers
+  are discarded when the next response starts; repeated fields within the final block retain their
+  existing CRLF-joined representation. Resetting a payload clears both the stringstream contents
+  and its state flags (`clear()` alone does not erase buffered bytes).
+- `GetHeader()` rejects a null name, null buffer or zero capacity without writing. A positive
+  capacity preserves the existing truncation behaviour and always terminates a found value.
 - `WriteHeaderCallback()` calls `OnRespondStart()` before the first header is stored, which is what
   moves the request into the `Responding` state; the streaming variant calls `FinalizeHeaders()`
   before the first `OnReceiveData()` so headers are already queryable inside the stream callback.

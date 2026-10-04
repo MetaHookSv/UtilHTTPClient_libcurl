@@ -55,7 +55,8 @@ if(BUILD_TESTING)
     set_target_properties(UtilHTTPClientTests PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tests")
     add_dependencies(UtilHTTPClientTests UtilHTTPClient_libcurl)
-    foreach(scenario Factory Url SyncGet Post AsyncPool Stream HttpError TransportError TLS)
+    foreach(scenario Factory Url SyncGet Post AsyncPool Stream HttpError TransportError TLS
+        HeaderBuffers Put Redirect RedirectStream)
         add_test(NAME ${scenario} COMMAND UtilHTTPClientTests
             "$<TARGET_FILE:UtilHTTPClient_libcurl>" "$<TARGET_FILE:libcurl_shared>" ${scenario})
         set_tests_properties(${scenario} PROPERTIES TIMEOUT 30)

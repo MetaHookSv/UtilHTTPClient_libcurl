@@ -144,7 +144,16 @@ private:
             }
         }
         lastRequest = request;
-        if (request.starts_with("GET /stream "))
+        if (request.starts_with("GET /redirect "))
+        {
+            SendAll(connection, "HTTP/1.1 302 Found\r\nLocation: /final\r\nX-Intermediate: stale\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+        }
+        else if (request.starts_with("GET /final "))
+        {
+            SendAll(connection, "HTTP/1.1 103 Early Hints\r\nX-Interim: stale\r\n\r\n");
+            SendAll(connection, "HTTP/1.1 200 OK\r\nX-Port-Test: present\r\nX-Repeated: first\r\nX-Repeated: second\r\nContent-Length: 11\r\nConnection: close\r\n\r\nhello world");
+        }
+        else if (request.starts_with("GET /stream "))
         {
             SendAll(connection, "HTTP/1.1 200 OK\r\nX-Port-Test: present\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n\r\n");
             SendAll(connection, "5\r\nhello\r\n");
@@ -154,7 +163,7 @@ private:
         else
         {
             const bool missing = request.starts_with("GET /missing ");
-            const std::string body = request.starts_with("POST /echo ")
+            const std::string body = (request.starts_with("POST /echo ") || request.starts_with("PUT /echo "))
                 ? request.substr(headerEnd + 4, bodySize) : (missing ? "missing" : "hello world");
             const std::string status = missing ? "404 Not Found" : "200 OK";
             SendAll(connection, "HTTP/1.1 " + status + "\r\nX-Port-Test: present\r\nContent-Length: "
@@ -380,6 +389,107 @@ static void SyncTest(Module& module, bool post, bool missing)
     Equal(1, results.destroyed, "sync callback ownership");
 }
 
+static void HeaderBufferTest(Module& module)
+{
+    HttpServer server;
+    Results results;
+    Client client(module);
+    Request request(client.value->CreateSyncRequest(server.Url("/get").c_str(), UtilHTTPMethod::Get, new Callbacks(results)));
+    Require(request != nullptr, "header request creation failed");
+    request->SetTimeout(2);
+    request->Send();
+    Pump(client.value, results);
+    server.Finish();
+    auto response = request->GetResponse();
+    std::array<char, 3> guarded{'A', 'B', 'C'};
+    Require(!response->GetHeader("X-Port-Test", &guarded[1], 0), "zero-size buffer must be rejected");
+    Equal(std::array<char, 3>{'A', 'B', 'C'}, guarded, "zero-size lookup must not write any bytes");
+    Require(!response->GetHeader("X-Port-Test", nullptr, 0), "null zero-size buffer must be rejected");
+    Require(!response->GetHeader("X-Port-Test", nullptr, 8), "null buffer must be rejected");
+    Require(!response->GetHeader(nullptr, &guarded[1], 1), "null header name must be rejected");
+    Require(response->GetHeader("X-Port-Test", &guarded[1], 1), "one-byte buffer should be terminated");
+    Equal(std::array<char, 3>{'A', '\0', 'C'}, guarded, "one-byte lookup must preserve surrounding bytes");
+    std::array<char, 4> truncated{};
+    Require(response->GetHeader("X-Port-Test", truncated.data(), truncated.size()), "truncated header lookup");
+    Equal(std::string_view("pre"), std::string_view(truncated.data()), "truncated header must be terminated");
+    Require(!response->GetHeader("absent", &guarded[1], 1), "missing header must fail");
+}
+
+static void PutTest(Module& module)
+{
+    Client client(module);
+    // Include an embedded NUL and a replacement body to check the copied size and ownership.
+    const std::string body("put\0body", 8);
+    for (const auto& payload : {body, std::string{}})
+    {
+        HttpServer server;
+        Results results;
+        Request request(client.value->CreateSyncRequest(server.Url("/echo").c_str(), UtilHTTPMethod::Put, new Callbacks(results)));
+        Require(request != nullptr, "PUT request creation failed");
+        request->SetPostBody(nullptr, "old", 3);
+        auto copiedBody = payload;
+        request->SetPostBody("application/octet-stream", copiedBody.data(), copiedBody.size());
+        copiedBody.assign("changed after SetPostBody");
+        request->SetTimeout(2);
+        request->Send();
+        Pump(client.value, results);
+        server.Finish();
+        SuccessfulResponse(results);
+        Require(server.lastRequest.starts_with("PUT /echo HTTP/1.1\r\n"), "PUT must retain its method after setting a body");
+        Equal(payload, results.body, "PUT method and exact body must reach the echo endpoint");
+    }
+}
+
+class RedirectCallbacks : public Callbacks
+{
+public:
+    explicit RedirectCallbacks(Results& results) : Callbacks(results) {}
+    void OnResponseComplete(IUtilHTTPRequest* request, IUtilHTTPResponse* response) override
+    {
+        CheckHeaders(response);
+        Callbacks::OnResponseComplete(request, response);
+    }
+    void OnReceiveData(IUtilHTTPRequest* request, IUtilHTTPResponse* response, const void* bytes, size_t size) override
+    {
+        CheckHeaders(response);
+        Callbacks::OnReceiveData(request, response, bytes, size);
+    }
+    bool headersValid{true};
+private:
+    void CheckHeaders(IUtilHTTPResponse* response)
+    {
+        const auto length = response->GetHeaderValue("Content-Length");
+        const auto repeated = response->GetHeaderValue("X-Repeated");
+        headersValid &= length && std::string_view(length) == "11"
+            && repeated && std::string_view(repeated) == "first\r\nsecond"
+            && !response->GetHeaderValue("Location")
+            && !response->GetHeaderValue("X-Intermediate")
+            && !response->GetHeaderValue("X-Interim");
+    }
+};
+
+static void RedirectTest(Module& module, bool stream)
+{
+    HttpServer server(2);
+    Results results;
+    Client client(module);
+    auto callbacks = new RedirectCallbacks(results);
+    const auto url = server.Url("/redirect");
+    Request request(stream
+        ? client.value->CreateAsyncStreamRequest(url.c_str(), UtilHTTPMethod::Get, callbacks)
+        : client.value->CreateSyncRequest(url.c_str(), UtilHTTPMethod::Get, callbacks));
+    Require(request != nullptr, "redirect request creation failed");
+    request->SetFollowLocation(true);
+    request->SetTimeout(2);
+    request->Send();
+    Pump(client.value, results);
+    server.Finish();
+    SuccessfulResponse(results);
+    Require(callbacks->headersValid, "only final response headers should be visible, including during streaming");
+    Equal(std::string("hello world"), stream ? results.streamed : results.body, "redirect body");
+    if (stream) Require(results.streamHeaderPresent, "stream headers must be ready before data");
+}
+
 static void AsyncTest(Module& module, bool stream)
 {
     HttpServer server(stream ? 1 : 2);
@@ -475,6 +585,10 @@ int wmain(int argc, wchar_t** argv)
         else if (scenario == L"Url") UrlTest(module);
         else if (scenario == L"SyncGet") SyncTest(module, false, false);
         else if (scenario == L"Post") SyncTest(module, true, false);
+        else if (scenario == L"HeaderBuffers") HeaderBufferTest(module);
+        else if (scenario == L"Put") PutTest(module);
+        else if (scenario == L"Redirect") RedirectTest(module, false);
+        else if (scenario == L"RedirectStream") RedirectTest(module, true);
         else if (scenario == L"AsyncPool") AsyncTest(module, false);
         else if (scenario == L"Stream") AsyncTest(module, true);
         else if (scenario == L"HttpError") SyncTest(module, false, true);

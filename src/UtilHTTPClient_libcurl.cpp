@@ -186,6 +186,8 @@ public:
 
 	void Reset()
 	{
+		m_payload.clear();
+		m_stream.str(std::string{});
 		m_stream.clear();
 	}
 
@@ -253,6 +255,9 @@ public:
 
 	bool GetHeader(const char* name, char* buf, size_t buflen) override
 	{
+		if (!name || !buf || !buflen)
+			return false;
+
 		auto lowerName = ToLowerCase(name);
 		auto it = m_headers.find(lowerName);
 		if (it != m_headers.end()) {
@@ -400,6 +405,16 @@ public:
 
 	void WriteHeader(const void* data, size_t size)
 	{
+		// libcurl delivers complete lines, including each response's status line.
+		// Discard redirect, authentication and informational response headers.
+		const std::string_view line(static_cast<const char*>(data), size);
+		if (line.starts_with("HTTP/"))
+		{
+			m_pResponseHeaderPayload->Reset();
+			m_headers.clear();
+			m_bIsHeaderProcessed = false;
+		}
+
 		m_pResponseHeaderPayload->Write(data, size);
 	}
 
@@ -480,7 +495,8 @@ public:
 			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_POST, 1L);
 			break;
 		case UtilHTTPMethod::Put:
-			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_PUT, 1L);
+			// SetPostBody uses COPYPOSTFIELDS; keep PUT when it enables POST internally.
+			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_CUSTOMREQUEST, "PUT");
 			break;
 		case UtilHTTPMethod::Delete:
 			curl_easy_setopt(m_CurlEasyHandle, CURLOPT_CUSTOMREQUEST, "DELETE");
