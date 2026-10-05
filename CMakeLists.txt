@@ -45,7 +45,7 @@ set_target_properties(UtilHTTPClient_libcurl PROPERTIES
 
 install(TARGETS UtilHTTPClient_libcurl RUNTIME DESTINATION svencoop/metahook/dlls)
 install(FILES "$<TARGET_PDB_FILE:UtilHTTPClient_libcurl>" DESTINATION svencoop/metahook/dlls)
-install(FILES "$<TARGET_FILE:libcurl_shared>" DESTINATION .)
+install(FILES "$<TARGET_FILE:libcurl_shared>" DESTINATION svencoop/metahook/dlls)
 
 if(BUILD_TESTING)
     add_executable(UtilHTTPClientTests tests/RegressionTests.cpp)
