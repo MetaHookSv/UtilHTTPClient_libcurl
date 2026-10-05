@@ -19,8 +19,8 @@ Download `UtilHTTPClient_libcurl-windows-x86.7z` from
 [GitHub Releases](https://github.com/MetaHookSv/UtilHTTPClient_libcurl/releases) (built on `v*` tag pushes)
 and copy its contents into the game directory:
 
-* `libcurl.dll` next to the game executable (`libcurl-d.dll` for Debug).
-* `UtilHTTPClient_libcurl.dll` and its PDB under `svencoop/metahook/dlls`.
+* `libcurl.dll` (`libcurl-d.dll` for Debug), `UtilHTTPClient_libcurl.dll` and its PDB under
+  `svencoop/metahook/dlls`.
 
 The archive ships the runtime payload only. The public headers live in the repository's
 `include/Interface` (and the MetaHook SDK's `include/HLSDK/common`); add both to a

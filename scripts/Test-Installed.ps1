@@ -14,15 +14,20 @@ if ($cache -contains 'BUILD_TESTING:BOOL=OFF') {
 $tester = Join-Path $buildDirectory "tests/$Configuration/UtilHTTPClientTests.exe"
 $testHost = Join-Path $installDirectory 'UtilHTTPClientTests.exe'
 $clientDll = Join-Path $installDirectory 'svencoop/metahook/dlls/UtilHTTPClient_libcurl.dll'
+$dllsDirectory = Join-Path $installDirectory 'svencoop/metahook/dlls'
 $curlName = if ($Configuration -eq 'Debug') { 'libcurl-d.dll' } else { 'libcurl.dll' }
-$curlDll = Join-Path $installDirectory $curlName
+$curlDll = Join-Path $dllsDirectory $curlName
 $copied = $false
+$previousPath = $env:PATH
 try {
-    # Model the game executable in the install root; do not preload curl or change PATH.
+    # Model the game executable in the install root and the MetaHook loader, which appends
+    # <game>/metahook/dlls to PATH before loading plugins; the client resolves libcurl from there.
     [System.IO.File]::Copy($tester, $testHost, $false)
     $copied = $true
+    $env:PATH = "$dllsDirectory;$previousPath"
     & $testHost $clientDll $curlDll Installed
     if ($LASTEXITCODE -ne 0) { throw "Installed runtime test failed ($LASTEXITCODE)." }
 } finally {
+    $env:PATH = $previousPath
     if ($copied) { Remove-Item -LiteralPath $testHost }
 }

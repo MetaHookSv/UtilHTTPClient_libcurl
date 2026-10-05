@@ -15,8 +15,8 @@
 从 [GitHub Releases](https://github.com/MetaHookSv/UtilHTTPClient_libcurl/releases)
 下载 `UtilHTTPClient_libcurl-windows-x86.7z`（由 `v*` 标签推送构建），将内容复制到游戏目录：
 
-* `libcurl.dll` 放在游戏可执行文件旁（Debug 为 `libcurl-d.dll`）。
-* `UtilHTTPClient_libcurl.dll` 与 PDB 放在 `svencoop/metahook/dlls`。
+* `libcurl.dll`（Debug 为 `libcurl-d.dll`）、`UtilHTTPClient_libcurl.dll` 与 PDB 放在
+  `svencoop/metahook/dlls`。
 
 压缩包仅含运行时负载。公共头文件位于仓库的 `include/Interface`（以及 MetaHook SDK 的
 `include/HLSDK/common`），使用者需将两者加入包含路径。

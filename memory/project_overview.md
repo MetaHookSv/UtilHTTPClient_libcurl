@@ -111,8 +111,9 @@ Behaviour worth knowing:
 
 - **libcurl**: shared build from `CURL_SOURCE_PATH` (pinned) with Windows Schannel and HTTPS; the
   build deliberately disables external compression, HTTP/2, SSH, PSL and IDN2. Linked as
-  `CURL::libcurl` and installed as `libcurl.dll` (`libcurl-d.dll` for Debug) next to the game
-  executable.
+  `CURL::libcurl` and installed as `libcurl.dll` (`libcurl-d.dll` for Debug) under
+  `svencoop/metahook/dlls`, alongside the client DLL; the MetaHook loader adds that directory to
+  `PATH` before loading plugins, so the client resolves it there at runtime.
 - **MetaHook SDK**: the interface base and factory macros; `include/HLSDK/common/interface.cpp` is
   compiled into this DLL, so no host launcher is built or required.
 - **ScopeExit**: header-only RAII used around libcurl resources.
@@ -143,15 +144,15 @@ overrides are given for offline builds.
 Install output is `install/x86/<Configuration>/`:
 
 ```text
-libcurl.dll                                   (libcurl-d.dll for Debug, next to the game executable)
 svencoop/metahook/dlls/UtilHTTPClient_libcurl.dll + .pdb
+svencoop/metahook/dlls/libcurl.dll            (libcurl-d.dll for Debug)
 ```
 
 The install rules for the public header, licenses and READMEs were removed, so the install tree
 and the release archive carry only this runtime payload. The public header lives in the
 repository's `include/Interface/`, and licenses stay in the repository's `licenses/`; neither is
 installed or packaged. Nothing is deployed into a game automatically.
-`scripts/Package-Windows.ps1` produces the distributable archive from `libcurl.dll` and `svencoop/`.
+`scripts/Package-Windows.ps1` produces the distributable archive from the `svencoop/` payload.
 
 ## Notes
 
