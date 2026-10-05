@@ -14,18 +14,8 @@ This file provides guidance and important rules working with code in this reposi
 - This repository contains the standalone UtilHTTPClient_libcurl library, extracted from MetaHookSv
   `PluginLibs/UtilHTTPClient_libcurl`. Its notes were migrated from MetaHookSv and adapted to the
   CMake workspace; see `memory/project_overview.md` for scope and provenance.
-- Basic Memory is registered as MCP server `basic-memory`, pinned to the `utilhttpclient-libcurl`
-  project (project-level `.mcp.json`, mirrored by `.codex/config.toml`). The `metahooksv` project
-  belongs to the source repository.
-- Prefer Basic Memory MCP tools (`search_notes` / `read_note` / `write_note` / `edit_note`) only when
-  their project resolves to this repository's `memory/` directory. Verify the project binding before
-  writing; when no matching project is available, read and edit the local markdown files directly.
 - Notes use the `utilhttpclient-libcurl/` permalink prefix to distinguish them from the source
   repository.
-- Historical records are not current evidence: the migrated note retains MetaHookSv paths
-  (`PluginLibs/UtilHTTPClient_libcurl/`) and MSBuild property names, while the current sources are
-  `src/<file>` and the build is CMake. Do not extend an old statement to a new change without
-  checking the code.
 
 #### High-level information in this repository (read corresponding notes first)
 
@@ -76,8 +66,3 @@ This file provides guidance and important rules working with code in this reposi
   CTest, install and verify the installed DLL. Keep tests focused on public behavior.
 - Build, install and dependency-cache directories are ignored. Do not commit, push or publish
   without authorization.
-
-## Explore SKILLs
-
-- Project-level skills, when present, live in `.claude/skills` no matter what harness tool is being
-  used.
