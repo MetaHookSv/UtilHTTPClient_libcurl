@@ -3,3 +3,6 @@
 /thirdparty/cache/
 /.vs/
 *.user
+
+# Generated from the shared FormatValidation source during CMake configuration.
+/.clang-format

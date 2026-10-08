@@ -25,7 +25,7 @@ static void Require(bool condition, std::string_view message)
         throw std::runtime_error(std::string(message));
 }
 
-template<class Expected, class Actual>
+template <class Expected, class Actual>
 static void Equal(const Expected& expected, const Actual& actual, std::string_view message)
 {
     Require(expected == actual, message);
@@ -46,17 +46,20 @@ class Socket
 {
 public:
     explicit Socket(SOCKET value = INVALID_SOCKET) : value(value) {}
-    ~Socket() { if (value != INVALID_SOCKET) closesocket(value); }
-    Socket(const Socket&) = delete;
+    ~Socket()
+    {
+        if (value != INVALID_SOCKET) closesocket(value);
+    }
+    Socket(const Socket&)            = delete;
     Socket& operator=(const Socket&) = delete;
-    SOCKET value;
+    SOCKET  value;
 };
 
 static unsigned short BindLoopback(Socket& socket)
 {
     Require(socket.value != INVALID_SOCKET, "socket failed");
     sockaddr_in address{};
-    address.sin_family = AF_INET;
+    address.sin_family      = AF_INET;
     address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     Require(bind(socket.value, reinterpret_cast<sockaddr*>(&address), sizeof(address)) == 0, "bind failed");
     int length = sizeof(address);
@@ -80,13 +83,16 @@ public:
                     Require(connection.value != INVALID_SOCKET, "accept failed");
                     constexpr DWORD receiveTimeoutMs = 3000;
                     setsockopt(connection.value, SOL_SOCKET, SO_RCVTIMEO,
-                        reinterpret_cast<const char*>(&receiveTimeoutMs), sizeof(receiveTimeoutMs));
+                               reinterpret_cast<const char*>(&receiveTimeoutMs), sizeof(receiveTimeoutMs));
                     setsockopt(connection.value, SOL_SOCKET, SO_SNDTIMEO,
-                        reinterpret_cast<const char*>(&receiveTimeoutMs), sizeof(receiveTimeoutMs));
+                               reinterpret_cast<const char*>(&receiveTimeoutMs), sizeof(receiveTimeoutMs));
                     Respond(connection.value);
                 }
             }
-            catch (...) { error = std::current_exception(); }
+            catch (...)
+            {
+                error = std::current_exception();
+            }
         });
     }
 
@@ -125,10 +131,10 @@ private:
     void Respond(SOCKET connection)
     {
         std::array<char, 4096> buffer{};
-        std::string request;
-        size_t headerEnd = std::string::npos;
-        size_t bodySize = 0;
-        constexpr size_t maxRequestSize = 64 * 1024;
+        std::string            request;
+        size_t                 headerEnd      = std::string::npos;
+        size_t                 bodySize       = 0;
+        constexpr size_t       maxRequestSize = 64 * 1024;
         while (headerEnd == std::string::npos || request.size() < headerEnd + 4 + bodySize)
         {
             int received = recv(connection, buffer.data(), static_cast<int>(buffer.size()), 0);
@@ -162,18 +168,16 @@ private:
         }
         else
         {
-            const bool missing = request.starts_with("GET /missing ");
-            const std::string body = (request.starts_with("POST /echo ") || request.starts_with("PUT /echo "))
-                ? request.substr(headerEnd + 4, bodySize) : (missing ? "missing" : "hello world");
-            const std::string status = missing ? "404 Not Found" : "200 OK";
-            SendAll(connection, "HTTP/1.1 " + status + "\r\nX-Port-Test: present\r\nContent-Length: "
-                + std::to_string(body.size()) + "\r\nConnection: close\r\n\r\n" + body);
+            const bool        missing = request.starts_with("GET /missing ");
+            const std::string body    = (request.starts_with("POST /echo ") || request.starts_with("PUT /echo ")) ? request.substr(headerEnd + 4, bodySize) : (missing ? "missing" : "hello world");
+            const std::string status  = missing ? "404 Not Found" : "200 OK";
+            SendAll(connection, "HTTP/1.1 " + status + "\r\nX-Port-Test: present\r\nContent-Length: " + std::to_string(body.size()) + "\r\nConnection: close\r\n\r\n" + body);
         }
     }
 
-    Socket listener;
-    unsigned short port{};
-    std::thread worker;
+    Socket             listener;
+    unsigned short     port{};
+    std::thread        worker;
     std::exception_ptr error;
 };
 
@@ -201,7 +205,7 @@ public:
             Require(curl != nullptr, "installed client did not load its libcurl");
             std::array<wchar_t, 32768> loadedPath{};
             Require(GetModuleFileNameW(curl, loadedPath.data(), static_cast<DWORD>(loadedPath.size())) != 0,
-                "cannot locate loaded libcurl");
+                    "cannot locate loaded libcurl");
             Require(fs::equivalent(curlPath, loadedPath.data()), "client loaded libcurl from outside the install root");
         }
         factory = reinterpret_cast<CreateInterfaceFn>(GetProcAddress(dll, CREATEINTERFACE_PROCNAME));
@@ -212,23 +216,24 @@ public:
         if (dll) FreeLibrary(dll);
         if (ownCurl && curl) FreeLibrary(curl);
     }
-    Module(const Module&) = delete;
+    Module(const Module&)            = delete;
     Module& operator=(const Module&) = delete;
 
     IUtilHTTPClientFactory* GetFactory() const
     {
-        int result = IFACE_FAILED;
-        auto value = static_cast<IUtilHTTPClientFactory*>(factory(UTIL_HTTPCLIENT_FACTORY_LIBCURL_INTERFACE_VERSION, &result));
+        int  result = IFACE_FAILED;
+        auto value  = static_cast<IUtilHTTPClientFactory*>(factory(UTIL_HTTPCLIENT_FACTORY_LIBCURL_INTERFACE_VERSION, &result));
         Require(value != nullptr, "missing _007 factory interface");
         Equal(IFACE_OK, result, "factory return code");
         return value;
     }
 
-    HMODULE curl{};
+    HMODULE           curl{};
     CreateInterfaceFn factory{};
+
 private:
     HMODULE dll{};
-    bool ownCurl{};
+    bool    ownCurl{};
 };
 
 class Client
@@ -241,22 +246,26 @@ public:
         CUtilHTTPClientCreationContext context;
         value->Init(&context);
     }
-    ~Client() { value->Shutdown(); value->Destroy(); }
+    ~Client()
+    {
+        value->Shutdown();
+        value->Destroy();
+    }
     IUtilHTTPClient* value{};
 };
 
 struct Results
 {
-    int completions{};
-    int destroyed{};
-    int status{};
-    bool completed{};
-    bool error{};
-    std::string errorMessage;
-    std::string body;
-    std::string streamed;
-    std::string header;
-    bool streamHeaderPresent{true};
+    int                               completions{};
+    int                               destroyed{};
+    int                               status{};
+    bool                              completed{};
+    bool                              error{};
+    std::string                       errorMessage;
+    std::string                       body;
+    std::string                       streamed;
+    std::string                       header;
+    bool                              streamHeaderPresent{true};
     std::vector<UtilHTTPRequestState> states;
 };
 
@@ -264,15 +273,19 @@ class Callbacks : public IUtilHTTPCallbacks
 {
 public:
     explicit Callbacks(Results& results) : results(results) {}
-    void Destroy() override { ++results.destroyed; delete this; }
+    void Destroy() override
+    {
+        ++results.destroyed;
+        delete this;
+    }
     void OnResponseComplete(IUtilHTTPRequest*, IUtilHTTPResponse* response) override
     {
         ++results.completions;
-        results.status = response->GetStatusCode();
-        results.completed = response->IsResponseCompleted();
-        results.error = response->IsResponseError();
+        results.status       = response->GetStatusCode();
+        results.completed    = response->IsResponseCompleted();
+        results.error        = response->IsResponseError();
         results.errorMessage = response->GetResponseErrorMessage();
-        auto payload = response->GetPayload();
+        auto payload         = response->GetPayload();
         results.body.assign(payload->GetBytes(), payload->GetLength());
         if (const auto header = response->GetHeaderValue("x-port-test")) results.header = header;
     }
@@ -286,11 +299,18 @@ public:
         const auto header = response->GetHeaderValue("X-Port-Test");
         results.streamHeaderPresent &= header && std::string_view(header) == "present";
     }
+
 private:
     Results& results;
 };
 
-struct DestroyRequest { void operator()(IUtilHTTPRequest* value) const { if (value) value->Destroy(); } };
+struct DestroyRequest
+{
+    void operator()(IUtilHTTPRequest* value) const
+    {
+        if (value) value->Destroy();
+    }
+};
 using Request = std::unique_ptr<IUtilHTTPRequest, DestroyRequest>;
 
 static void Pump(IUtilHTTPClient* client, const Results& results)
@@ -310,7 +330,7 @@ static void SuccessfulResponse(const Results& results)
     Require(results.completed && !results.error, "response should complete successfully");
     Equal(std::string("present"), results.header, "response header");
     Equal(std::vector{UtilHTTPRequestState::Requesting, UtilHTTPRequestState::Responding, UtilHTTPRequestState::Finished},
-        results.states, "request state callbacks");
+          results.states, "request state callbacks");
 }
 
 static void FactoryTest(Module& module)
@@ -332,7 +352,7 @@ static void FactoryTest(Module& module)
 static void UrlTest(Module& module)
 {
     auto factory = module.GetFactory();
-    auto parsed = factory->ParseUrl("https://example.test/resource?q=1");
+    auto parsed  = factory->ParseUrl("https://example.test/resource?q=1");
     Require(parsed != nullptr, "valid URL rejected");
     Equal(std::string_view("example.test"), std::string_view(parsed->GetHost()), "URL host");
     Equal(443, parsed->GetPort(), "default HTTPS port");
@@ -346,11 +366,11 @@ static void UrlTest(Module& module)
 static void SyncTest(Module& module, bool post, bool missing)
 {
     HttpServer server;
-    Results results;
-    Client client(module);
+    Results    results;
+    Client     client(module);
     const auto url = server.Url(post ? "/echo" : (missing ? "/missing" : "/get"));
-    Request request(client.value->CreateSyncRequest(url.c_str(), post ? UtilHTTPMethod::Post : UtilHTTPMethod::Get,
-        new Callbacks(results)));
+    Request    request(client.value->CreateSyncRequest(url.c_str(), post ? UtilHTTPMethod::Post : UtilHTTPMethod::Get,
+                                                       new Callbacks(results)));
     Require(request != nullptr, "sync request creation failed");
     Require(!request->WaitForCompleteTimeout(0), "unsent request must not be complete");
     constexpr std::string_view posted = "port=standalone&value=123";
@@ -373,7 +393,7 @@ static void SyncTest(Module& module, bool post, bool missing)
     {
         SuccessfulResponse(results);
         Equal(std::string(post ? posted : "hello world"), results.body, "response body");
-        auto response = request->GetResponse();
+        auto   response = request->GetResponse();
         size_t size{};
         Require(response->GetHeaderSize("X-PORT-TEST", &size), "header size lookup failed");
         Equal(size_t{8}, size, "header size including terminator");
@@ -392,15 +412,15 @@ static void SyncTest(Module& module, bool post, bool missing)
 static void HeaderBufferTest(Module& module)
 {
     HttpServer server;
-    Results results;
-    Client client(module);
-    Request request(client.value->CreateSyncRequest(server.Url("/get").c_str(), UtilHTTPMethod::Get, new Callbacks(results)));
+    Results    results;
+    Client     client(module);
+    Request    request(client.value->CreateSyncRequest(server.Url("/get").c_str(), UtilHTTPMethod::Get, new Callbacks(results)));
     Require(request != nullptr, "header request creation failed");
     request->SetTimeout(2);
     request->Send();
     Pump(client.value, results);
     server.Finish();
-    auto response = request->GetResponse();
+    auto                response = request->GetResponse();
     std::array<char, 3> guarded{'A', 'B', 'C'};
     Require(!response->GetHeader("X-Port-Test", &guarded[1], 0), "zero-size buffer must be rejected");
     Equal(std::array<char, 3>{'A', 'B', 'C'}, guarded, "zero-size lookup must not write any bytes");
@@ -423,8 +443,8 @@ static void PutTest(Module& module)
     for (const auto& payload : {body, std::string{}})
     {
         HttpServer server;
-        Results results;
-        Request request(client.value->CreateSyncRequest(server.Url("/echo").c_str(), UtilHTTPMethod::Put, new Callbacks(results)));
+        Results    results;
+        Request    request(client.value->CreateSyncRequest(server.Url("/echo").c_str(), UtilHTTPMethod::Put, new Callbacks(results)));
         Require(request != nullptr, "PUT request creation failed");
         request->SetPostBody(nullptr, "old", 3);
         auto copiedBody = payload;
@@ -455,29 +475,24 @@ public:
         Callbacks::OnReceiveData(request, response, bytes, size);
     }
     bool headersValid{true};
+
 private:
     void CheckHeaders(IUtilHTTPResponse* response)
     {
-        const auto length = response->GetHeaderValue("Content-Length");
+        const auto length   = response->GetHeaderValue("Content-Length");
         const auto repeated = response->GetHeaderValue("X-Repeated");
-        headersValid &= length && std::string_view(length) == "11"
-            && repeated && std::string_view(repeated) == "first\r\nsecond"
-            && !response->GetHeaderValue("Location")
-            && !response->GetHeaderValue("X-Intermediate")
-            && !response->GetHeaderValue("X-Interim");
+        headersValid &= length && std::string_view(length) == "11" && repeated && std::string_view(repeated) == "first\r\nsecond" && !response->GetHeaderValue("Location") && !response->GetHeaderValue("X-Intermediate") && !response->GetHeaderValue("X-Interim");
     }
 };
 
 static void RedirectTest(Module& module, bool stream)
 {
     HttpServer server(2);
-    Results results;
-    Client client(module);
-    auto callbacks = new RedirectCallbacks(results);
-    const auto url = server.Url("/redirect");
-    Request request(stream
-        ? client.value->CreateAsyncStreamRequest(url.c_str(), UtilHTTPMethod::Get, callbacks)
-        : client.value->CreateSyncRequest(url.c_str(), UtilHTTPMethod::Get, callbacks));
+    Results    results;
+    Client     client(module);
+    auto       callbacks = new RedirectCallbacks(results);
+    const auto url       = server.Url("/redirect");
+    Request    request(stream ? client.value->CreateAsyncStreamRequest(url.c_str(), UtilHTTPMethod::Get, callbacks) : client.value->CreateSyncRequest(url.c_str(), UtilHTTPMethod::Get, callbacks));
     Require(request != nullptr, "redirect request creation failed");
     request->SetFollowLocation(true);
     request->SetTimeout(2);
@@ -493,12 +508,11 @@ static void RedirectTest(Module& module, bool stream)
 static void AsyncTest(Module& module, bool stream)
 {
     HttpServer server(stream ? 1 : 2);
-    Results results;
-    Results retainedResults;
-    Client client(module);
-    const auto url = server.Url(stream ? "/stream" : "/get");
-    auto request = stream ? client.value->CreateAsyncStreamRequest(url.c_str(), UtilHTTPMethod::Get, new Callbacks(results))
-        : client.value->CreateAsyncRequest(url.c_str(), UtilHTTPMethod::Get, new Callbacks(results));
+    Results    results;
+    Results    retainedResults;
+    Client     client(module);
+    const auto url     = server.Url(stream ? "/stream" : "/get");
+    auto       request = stream ? client.value->CreateAsyncStreamRequest(url.c_str(), UtilHTTPMethod::Get, new Callbacks(results)) : client.value->CreateAsyncRequest(url.c_str(), UtilHTTPMethod::Get, new Callbacks(results));
     Require(request != nullptr, "async request creation failed");
     Require(request->IsAsync() && request->IsStream() == stream, "request type");
     client.value->AddToRequestPool(request);
@@ -540,12 +554,12 @@ static void AsyncTest(Module& module, bool stream)
 static void TransportErrorTest(Module& module)
 {
     // Reserve a port without listening so connection refusal is deterministic.
-    Socket reserved(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
-    auto port = BindLoopback(reserved);
-    Results results;
-    Client client(module);
+    Socket     reserved(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
+    auto       port = BindLoopback(reserved);
+    Results    results;
+    Client     client(module);
     const auto url = "http://127.0.0.1:" + std::to_string(port) + "/refused";
-    Request request(client.value->CreateSyncRequest(url.c_str(), UtilHTTPMethod::Get, new Callbacks(results)));
+    Request    request(client.value->CreateSyncRequest(url.c_str(), UtilHTTPMethod::Get, new Callbacks(results)));
     Require(request != nullptr, "error request creation failed");
     request->SetTimeout(2);
     request->Send();
@@ -560,12 +574,12 @@ static void TransportErrorTest(Module& module)
 static void TlsTest(Module& module)
 {
     using VersionInfo = curl_version_info_data* (*)(CURLversion);
-    auto versionInfo = reinterpret_cast<VersionInfo>(GetProcAddress(module.curl, "curl_version_info"));
+    auto versionInfo  = reinterpret_cast<VersionInfo>(GetProcAddress(module.curl, "curl_version_info"));
     Require(versionInfo != nullptr, "curl_version_info export missing");
     const auto info = versionInfo(CURLVERSION_NOW);
     Require(info != nullptr && (info->features & CURL_VERSION_SSL), "libcurl SSL feature missing");
     Require(info->ssl_version && std::string_view(info->ssl_version).find("Schannel") != std::string_view::npos,
-        "libcurl must use Schannel");
+            "libcurl must use Schannel");
     bool https = false;
     for (auto protocol = info->protocols; protocol && *protocol; ++protocol)
         https |= std::string_view(*protocol) == "https";
@@ -578,29 +592,42 @@ int wmain(int argc, wchar_t** argv)
     {
         Require(argc == 4, "usage: UtilHTTPClientTests <client.dll> <libcurl.dll> <scenario>");
         Require(SetEnvironmentVariableW(L"NO_PROXY", L"127.0.0.1") != 0, "cannot bypass proxies for loopback tests");
-        Winsock winsock;
+        Winsock            winsock;
         const std::wstring scenario = argv[3];
-        Module module(fs::absolute(argv[1]), fs::absolute(argv[2]), scenario == L"Installed");
+        Module             module(fs::absolute(argv[1]), fs::absolute(argv[2]), scenario == L"Installed");
         if (scenario == L"Factory") FactoryTest(module);
-        else if (scenario == L"Url") UrlTest(module);
-        else if (scenario == L"SyncGet") SyncTest(module, false, false);
-        else if (scenario == L"Post") SyncTest(module, true, false);
-        else if (scenario == L"HeaderBuffers") HeaderBufferTest(module);
-        else if (scenario == L"Put") PutTest(module);
-        else if (scenario == L"Redirect") RedirectTest(module, false);
-        else if (scenario == L"RedirectStream") RedirectTest(module, true);
-        else if (scenario == L"AsyncPool") AsyncTest(module, false);
-        else if (scenario == L"Stream") AsyncTest(module, true);
-        else if (scenario == L"HttpError") SyncTest(module, false, true);
-        else if (scenario == L"TransportError") TransportErrorTest(module);
-        else if (scenario == L"TLS") TlsTest(module);
+        else if (scenario == L"Url")
+            UrlTest(module);
+        else if (scenario == L"SyncGet")
+            SyncTest(module, false, false);
+        else if (scenario == L"Post")
+            SyncTest(module, true, false);
+        else if (scenario == L"HeaderBuffers")
+            HeaderBufferTest(module);
+        else if (scenario == L"Put")
+            PutTest(module);
+        else if (scenario == L"Redirect")
+            RedirectTest(module, false);
+        else if (scenario == L"RedirectStream")
+            RedirectTest(module, true);
+        else if (scenario == L"AsyncPool")
+            AsyncTest(module, false);
+        else if (scenario == L"Stream")
+            AsyncTest(module, true);
+        else if (scenario == L"HttpError")
+            SyncTest(module, false, true);
+        else if (scenario == L"TransportError")
+            TransportErrorTest(module);
+        else if (scenario == L"TLS")
+            TlsTest(module);
         else if (scenario == L"Installed")
         {
             FactoryTest(module);
             TlsTest(module);
             SyncTest(module, false, false);
         }
-        else throw std::runtime_error("unknown scenario");
+        else
+            throw std::runtime_error("unknown scenario");
         std::wcout << scenario << L" passed\n";
         return 0;
     }
