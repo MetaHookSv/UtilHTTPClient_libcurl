@@ -36,9 +36,11 @@ target_compile_definitions(utilhttpclient_settings INTERFACE
     $<$<CONFIG:Debug>:_DEBUG> $<$<CONFIG:Release>:NDEBUG>)
 target_compile_options(utilhttpclient_settings INTERFACE /W3 /permissive- /wd4819 /Zi)
 
+include(cmake/SourceGroups.cmake)
 add_library(UtilHTTPClient_libcurl SHARED
     src/UtilHTTPClient_libcurl.cpp src/dllmain.cpp
     "${METAHOOK_SOURCE_PATH}/include/HLSDK/common/interface.cpp")
+utilhttpclient_assign_source_groups(UtilHTTPClient_libcurl)
 target_link_libraries(UtilHTTPClient_libcurl PRIVATE utilhttpclient_settings CURL::libcurl)
 target_include_directories(UtilHTTPClient_libcurl PRIVATE "${SCOPEEXIT_SOURCE_PATH}/include")
 target_compile_definitions(UtilHTTPClient_libcurl PRIVATE UTILHTTPCLIENT_LIBCURL_EXPORTS _USRDLL)
