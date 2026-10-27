@@ -60,5 +60,5 @@ distributable archive.
 
 ## License
 
-MIT; see [LICENSE](LICENSE). Third-party licenses are under `licenses/` in the repository;
+MIT; see [LICENSE](LICENSE). Dependencies keep the licenses of their upstream repositories;
 the release archive ships the runtime payload only.

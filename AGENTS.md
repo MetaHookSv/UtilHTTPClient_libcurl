@@ -33,7 +33,7 @@ This file provides guidance and important rules working with code in this reposi
 - Public API / interface: `include/Interface/IUtilHTTPClient.h` — shared with the SteamAPI backend,
   so a change here affects both repositories
 - Tests: `tests/RegressionTests.cpp`, run by CTest (`BUILD_TESTING` defaults to `ON` in the scripts)
-- Docs: `README.md`, `README.zh-CN.md`, third-party terms under `licenses/`
+- Docs: `README.md`, `README.zh-CN.md`; third-party terms stay in the upstream repositories
 - External sources, all read-only inputs: `CURL_SOURCE_PATH`, `METAHOOK_SOURCE_PATH`,
   and `SCOPEEXIT_SOURCE_PATH`; pins are fetched only when the corresponding override is
   empty. The build uses C++20 and a static CRT, for MSVC x86 only

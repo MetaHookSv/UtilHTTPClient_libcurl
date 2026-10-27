@@ -52,4 +52,4 @@ MetaHook 接口代码和 ScopeExit；可通过
 
 ## 许可证
 
-MIT，见 [LICENSE](LICENSE)。第三方许可证位于仓库的 `licenses/` 目录，发布压缩包仅含运行时负载。
+MIT，见 [LICENSE](LICENSE)。各依赖沿用其上游仓库的许可证，发布压缩包仅含运行时负载。

@@ -132,7 +132,7 @@ Behaviour worth knowing:
   dependency pinning (including the trimmed libcurl feature set).
 - `scripts/build-UtilHTTPClient_libcurl-x86-{Debug,Release}.bat`,
   `scripts/Package-Windows.ps1` — build/test/install and packaging entry points.
-- `README.md`, `README.zh-CN.md`, `licenses/` — documentation and third-party terms.
+- `README.md`, `README.zh-CN.md` — documentation.
 
 ## Build and data flow
 
@@ -150,8 +150,8 @@ svencoop/metahook/dlls/libcurl.dll            (libcurl-d.dll for Debug)
 
 The install rules for the public header, licenses and READMEs were removed, so the install tree
 and the release archive carry only this runtime payload. The public header lives in the
-repository's `include/Interface/`, and licenses stay in the repository's `licenses/`; neither is
-installed or packaged. Nothing is deployed into a game automatically.
+repository's `include/Interface/` and is not installed or packaged; dependency licenses stay in
+their upstream repositories. Nothing is deployed into a game automatically.
 `scripts/Package-Windows.ps1` produces the distributable archive from the `svencoop/` payload.
 
 ## Notes
@@ -186,5 +186,5 @@ installed or packaged. Nothing is deployed into a game automatically.
 ## External documentation
 
 `README.md` is the English landing page and `README.zh-CN.md` the Chinese one; both cover the quick
-start, the pinned dependency overrides and the known limitations. Third-party terms are under
-`licenses/` in the repository; the release archive ships the runtime payload only.
+start, the pinned dependency overrides and the known limitations. Third-party terms stay in
+the upstream repositories; the release archive ships the runtime payload only.
