@@ -118,7 +118,7 @@ Behaviour worth knowing:
   compiled into this DLL, so no host launcher is built or required.
 - **ScopeExit**: header-only RAII used around libcurl resources.
 - **Build-only inputs, all read-only**: `CURL_SOURCE_PATH`, `METAHOOK_SOURCE_PATH`,
-  `SCOPEEXIT_SOURCE_PATH`, `VC_LTL_Root` (SHA-256-verified VC-LTL 5.3.1 in `thirdparty/cache`).
+  `SCOPEEXIT_SOURCE_PATH`.
   C++20, static MSVC CRT, Windows MSVC x86 only.
 - **No game integration**: the library uses no engine gamedata and needs no `plugins.lst` entry —
   consumers load it through `CreateInterface`.
@@ -128,7 +128,7 @@ Behaviour worth knowing:
 - `src/UtilHTTPClient_libcurl.cpp`, `src/dllmain.cpp` — implementation and entry point.
 - `include/Interface/IUtilHTTPClient.h` — public header (shipped with the sources, not installed).
 - `tests/RegressionTests.cpp` — regression suite run by CTest.
-- `CMakeLists.txt`, `cmake/Curl.cmake`, `cmake/Dependencies.cmake`, `cmake/VCLTL.cmake` — build and
+- `CMakeLists.txt`, `cmake/Curl.cmake`, `cmake/Dependencies.cmake` — build and
   dependency pinning (including the trimmed libcurl feature set).
 - `scripts/build-UtilHTTPClient_libcurl-x86-{Debug,Release}.bat`,
   `scripts/Package-Windows.ps1` — build/test/install and packaging entry points.
@@ -139,7 +139,7 @@ Behaviour worth knowing:
 `scripts/build-UtilHTTPClient_libcurl-x86-{Debug,Release}.bat` configures, builds, runs CTest,
 installs and verifies the installed DLL, stopping on failure; `BUILD_TESTING` defaults to `ON`
 (`-DBUILD_TESTING=OFF` for a library-only build). The first configure fetches curl, the MetaHook
-interface code and ScopeExit at pinned commits unless the corresponding `*_SOURCE_PATH` / `VC_LTL_Root`
+interface code and ScopeExit at pinned commits unless the corresponding `*_SOURCE_PATH`
 overrides are given for offline builds.
 Install output is `install/x86/<Configuration>/`:
 

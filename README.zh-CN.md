@@ -5,7 +5,7 @@
 独立的 libcurl HTTP 客户端，在 libcurl 之上实现 `IUtilHTTPClient` API，支持同步请求对象、
 异步请求、流式响应及可选的共享 Cookie 容器，网络传输由 `RunFrame()` 推进。
 
-* 仅支持 Windows MSVC x86，使用 Visual Studio 2022、C++20 和 VC-LTL 5.3.1 构建。
+* 仅支持 Windows MSVC x86，使用 Visual Studio 2022、C++20 构建。
 * 导出 `CreateInterface`，以及 `UtilHTTPClient_libcurl_007` 和
   `UtilHTTPClientFactory_libcurl_007` 两个接口。
 * 共享 libcurl 启用 Windows Schannel 和 HTTPS，不含压缩、HTTP/2、SSH、PSL、IDN2 等外部依赖。
@@ -29,7 +29,7 @@
 ## 构建
 
 需要 Windows、Visual Studio 2022 C++ x86 工具和 Windows SDK、CMake 3.21 以上、Git 及 PowerShell。
-Debug、Release 均使用 C++20、静态 MSVC CRT 及 VC-LTL 5.3.1。
+Debug、Release 均使用 C++20 及静态 MSVC CRT。
 
 ```bat
 git clone --recurse-submodules https://github.com/MetaHookSv/UtilHTTPClient_libcurl
@@ -40,7 +40,7 @@ scripts\build-UtilHTTPClient_libcurl-x86-Release.bat
 每个构建脚本依次配置、构建、执行 CTest、安装并验证安装后的 DLL，失败立即退出。
 `BUILD_TESTING` 默认开启，`-DBUILD_TESTING=OFF` 可只构建库。首次配置会按固定提交获取 curl、
 MetaHook 接口代码和 ScopeExit；可通过
-`-DCURL_SOURCE_PATH=... -DMETAHOOK_SOURCE_PATH=... -DSCOPEEXIT_SOURCE_PATH=... -DVC_LTL_Root=...`
+`-DCURL_SOURCE_PATH=... -DMETAHOOK_SOURCE_PATH=... -DSCOPEEXIT_SOURCE_PATH=...`
 复用本地检出目录进行离线构建。`scripts/Package-Windows.ps1` 用于生成发布压缩包。
 
 ## 已知限制

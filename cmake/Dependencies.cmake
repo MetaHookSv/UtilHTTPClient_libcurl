@@ -1,8 +1,6 @@
-set(UTILHTTPCLIENT_DEPENDENCY_CACHE_DIR "${PROJECT_SOURCE_DIR}/thirdparty/cache" CACHE PATH "Downloaded binary dependency cache")
 set(METAHOOK_SOURCE_PATH "$ENV{METAHOOK_SOURCE_PATH}" CACHE PATH "MetaHook source tree; empty fetches the pinned SDK")
 set(CURL_SOURCE_PATH "$ENV{CURL_SOURCE_PATH}" CACHE PATH "Clean curl Git checkout at the required commit; empty fetches it")
 set(SCOPEEXIT_SOURCE_PATH "$ENV{SCOPEEXIT_SOURCE_PATH}" CACHE PATH "ScopeExit source tree; empty fetches the pinned commit")
-set(VC_LTL_Root "$ENV{VC_LTL_Root}" CACHE PATH "Existing VC-LTL binary package; empty downloads the verified package")
 set(UTILHTTPCLIENT_CURL_COMMIT "4f95f327093bef29a4f8fe188edc6c95f49980a5")
 
 function(utilhttpclient_require_files name source)
@@ -45,7 +43,7 @@ function(utilhttpclient_fetch_source name url commit out_var)
     FetchContent_Declare(${name}
         GIT_REPOSITORY "${url}" GIT_TAG "${commit}"
         GIT_SUBMODULES "" GIT_SUBMODULES_RECURSE FALSE
-        # Populate only; apply VC-LTL and curl options before configuring curl.
+        # Populate only; apply curl options before configuring curl.
         SOURCE_SUBDIR _utilhttpclient_source_only)
     FetchContent_MakeAvailable(${name})
     set(${out_var} "${${name}_SOURCE_DIR}" PARENT_SCOPE)
@@ -55,8 +53,6 @@ function(utilhttpclient_prepare_dependencies)
     set(metahook_files include/HLSDK/common/interface.h include/HLSDK/common/interface.cpp LICENSE)
     set(curl_files CMakeLists.txt include/curl/curl.h COPYING)
     set(scopeexit_files include/ScopeExit/ScopeExit.h LICENSE)
-    set(vcltl_files "VC-LTL helper for cmake.cmake" config/config.cmake
-        TargetPlatform/6.0.6000.0/lib/Win32/libucrt.lib Readme.md)
 
     # Reject invalid explicit paths before downloading anything. Never modify them.
     foreach(dependency METAHOOK CURL SCOPEEXIT)
@@ -69,10 +65,6 @@ function(utilhttpclient_prepare_dependencies)
     endforeach()
     if(CURL_SOURCE_PATH)
         utilhttpclient_validate_curl("${CURL_SOURCE_PATH}")
-    endif()
-    if(VC_LTL_Root)
-        get_filename_component(VC_LTL_Root "${VC_LTL_Root}" ABSOLUTE BASE_DIR "${PROJECT_SOURCE_DIR}")
-        utilhttpclient_require_files(VC_LTL_Root "${VC_LTL_Root}" ${vcltl_files})
     endif()
 
     if(NOT METAHOOK_SOURCE_PATH)
@@ -96,13 +88,4 @@ function(utilhttpclient_prepare_dependencies)
         set(${dependency}_SOURCE_PATH "${${dependency}_SOURCE_PATH}" PARENT_SCOPE)
         message(STATUS "${dependency}_SOURCE_PATH: ${${dependency}_SOURCE_PATH}")
     endforeach()
-
-    if(NOT VC_LTL_Root)
-        include("${CMAKE_CURRENT_FUNCTION_LIST_DIR}/VCLTL.cmake")
-        set(VC_LTL_Root "${UTILHTTPCLIENT_DEPENDENCY_CACHE_DIR}/VC-LTL-5.3.1")
-        utilhttpclient_prepare_vcltl()
-    endif()
-    utilhttpclient_require_files(VC_LTL_Root "${VC_LTL_Root}" ${vcltl_files})
-    set(VC_LTL_Root "${VC_LTL_Root}" PARENT_SCOPE)
-    message(STATUS "VC_LTL_Root: ${VC_LTL_Root}")
 endfunction()

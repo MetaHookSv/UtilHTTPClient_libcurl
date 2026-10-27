@@ -26,7 +26,7 @@ This file provides guidance and important rules working with code in this reposi
 #### When notes are insufficient: source entry points (query and read on demand)
 
 - Build: `CMakeLists.txt`, `cmake/Curl.cmake` (libcurl feature set and options),
-  `cmake/Dependencies.cmake` (pins and source-path overrides), `cmake/VCLTL.cmake`,
+  `cmake/Dependencies.cmake` (pins and source-path overrides),
   `scripts/build-UtilHTTPClient_libcurl-x86-{Debug,Release}.bat`, `scripts/Package-Windows.ps1`
 - Library sources: `src/UtilHTTPClient_libcurl.cpp` (client, request family, response family, URL
   parsing and the exports at the end of the file), `src/dllmain.cpp`
@@ -35,8 +35,8 @@ This file provides guidance and important rules working with code in this reposi
 - Tests: `tests/RegressionTests.cpp`, run by CTest (`BUILD_TESTING` defaults to `ON` in the scripts)
 - Docs: `README.md`, `README.zh-CN.md`, third-party terms under `licenses/`
 - External sources, all read-only inputs: `CURL_SOURCE_PATH`, `METAHOOK_SOURCE_PATH`,
-  `SCOPEEXIT_SOURCE_PATH` and `VC_LTL_Root`; pins are fetched only when the corresponding override is
-  empty. The build uses C++20, a static CRT and VC-LTL 5.3.1, for MSVC x86 only
+  and `SCOPEEXIT_SOURCE_PATH`; pins are fetched only when the corresponding override is
+  empty. The build uses C++20 and a static CRT, for MSVC x86 only
 - Build output: `build/x86/<configuration>/`; install output: `install/x86/<configuration>/`. Neither
   is tracked, and nothing is deployed into a game
 

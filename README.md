@@ -7,7 +7,7 @@ UtilHTTPClient_libcurl is a standalone libcurl HTTP client. It implements the
 requests, streamed responses and an optional shared cookie container. Transfers are
 driven by `RunFrame()`.
 
-* Windows MSVC x86 only, built with Visual Studio 2022, C++20 and VC-LTL 5.3.1.
+* Windows MSVC x86 only, built with Visual Studio 2022 and C++20.
 * Exports `CreateInterface`, plus the `UtilHTTPClient_libcurl_007` and
   `UtilHTTPClientFactory_libcurl_007` interfaces.
 * Shared libcurl with Windows Schannel and HTTPS; no external compression, HTTP/2, SSH,
@@ -35,7 +35,7 @@ release finished pooled requests — `WaitForComplete()` does not drive I/O.
 ## Build
 
 Windows with Visual Studio 2022 C++ x86 tools and the Windows SDK, CMake 3.21 or newer, Git
-and PowerShell. Debug and Release both use C++20, the static MSVC CRT and VC-LTL 5.3.1.
+and PowerShell. Debug and Release both use C++20 and the static MSVC CRT.
 
 ```bat
 git clone --recurse-submodules https://github.com/MetaHookSv/UtilHTTPClient_libcurl
@@ -46,7 +46,7 @@ scripts\build-UtilHTTPClient_libcurl-x86-Release.bat
 Each script configures, builds, runs CTest, installs and verifies the installed DLL,
 stopping on failure. `BUILD_TESTING` defaults to `ON`; use `-DBUILD_TESTING=OFF` for a
 library-only build. The first configure fetches curl, the MetaHook interface code and
-ScopeExit at pinned commits; pass `-DCURL_SOURCE_PATH=... -DMETAHOOK_SOURCE_PATH=... -DSCOPEEXIT_SOURCE_PATH=... -DVC_LTL_Root=...`
+ScopeExit at pinned commits; pass `-DCURL_SOURCE_PATH=... -DMETAHOOK_SOURCE_PATH=... -DSCOPEEXIT_SOURCE_PATH=...`
 to reuse local checkouts for offline builds. `scripts/Package-Windows.ps1` produces the
 distributable archive.
 

@@ -22,7 +22,6 @@ endif()
 include(CTest)
 include(cmake/Dependencies.cmake)
 utilhttpclient_prepare_dependencies()
-include("${VC_LTL_Root}/VC-LTL helper for cmake.cmake")
 include(cmake/Curl.cmake)
 utilhttpclient_add_curl()
 
