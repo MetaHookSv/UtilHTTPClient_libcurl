@@ -405,7 +405,10 @@ public:
     {
         m_pResponsePayload->Finalize();
 
-        auto code = curl_easy_getinfo(m_CurlEasyHandle, CURLINFO_RESPONSE_CODE, &m_iResponseStatusCode);
+        // CURLINFO_RESPONSE_CODE 写入的是 long：在 long 为 8 字节的平台上直接传 &m_iResponseStatusCode 会改写相邻成员
+        long responseCode{};
+        auto code             = curl_easy_getinfo(m_CurlEasyHandle, CURLINFO_RESPONSE_CODE, &responseCode);
+        m_iResponseStatusCode = static_cast<int>(responseCode);
 
         // 优先使用 curl 结果码判断网络层错误
         if (curlResult != CURLE_OK)
@@ -502,9 +505,9 @@ public:
         curl_easy_setopt(m_CurlEasyHandle, CURLOPT_WRITEDATA, this);
         curl_easy_setopt(m_CurlEasyHandle, CURLOPT_HEADERFUNCTION, WriteHeaderCallback);
         curl_easy_setopt(m_CurlEasyHandle, CURLOPT_HEADERDATA, this);
-        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_NOSIGNAL, 1);
-        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_CONNECTTIMEOUT_MS, 60000);
-        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_TIMEOUT_MS, 60000);
+        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_NOSIGNAL, 1L);
+        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_CONNECTTIMEOUT_MS, 60000L);
+        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_TIMEOUT_MS, 60000L);
         curl_easy_setopt(m_CurlEasyHandle, CURLOPT_ACCEPT_ENCODING, "");
         curl_easy_setopt(m_CurlEasyHandle, CURLOPT_COOKIEFILE, "");
         if (m_CurlCookieHandle)
@@ -699,13 +702,13 @@ public:
 
     void SetTimeout(int secs) override
     {
-        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_TIMEOUT_MS, secs * 1000);
-        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_CONNECTTIMEOUT_MS, secs * 1000);
+        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_TIMEOUT_MS, secs * 1000L);
+        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_CONNECTTIMEOUT_MS, secs * 1000L);
     }
 
     void SetPostBody(const char* contentType, const char* payload, size_t payloadSize) override
     {
-        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_POSTFIELDSIZE, payloadSize);
+        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_POSTFIELDSIZE, static_cast<long>(payloadSize));
         curl_easy_setopt(m_CurlEasyHandle, CURLOPT_COPYPOSTFIELDS, payload);
 
         if (contentType && contentType[0])
@@ -723,13 +726,13 @@ public:
     {
         if (b)
         {
-            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYPEER, 1);
-            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYHOST, 2);
+            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYPEER, 1L);
+            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYHOST, 2L);
         }
         else
         {
-            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYPEER, 0);
-            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYPEER, 0L);
+            curl_easy_setopt(m_CurlEasyHandle, CURLOPT_SSL_VERIFYHOST, 0L);
         }
     }
 
