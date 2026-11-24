@@ -11,6 +11,8 @@
 #include <new>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 static std::string ToLowerCase(const char* str)
 {
@@ -461,10 +463,11 @@ static size_t WriteHeaderCallback(void* contents, size_t size, size_t nmemb, voi
 class CUtilHTTPRequest : public IUtilHTTPRequest
 {
 protected:
-    CURLM*             m_CurlMultiHandle{nullptr};
-    CURL*              m_CurlEasyHandle{nullptr};
-    CURLSH*            m_CurlCookieHandle{nullptr};
-    struct curl_slist* m_CurlHeaders{nullptr};
+    CURLM*                                           m_CurlMultiHandle{nullptr};
+    CURL*                                            m_CurlEasyHandle{nullptr};
+    CURLSH*                                          m_CurlCookieHandle{nullptr};
+    struct curl_slist*                               m_CurlHeaders{nullptr};
+    std::vector<std::pair<std::string, std::string>> m_RequestHeaders;
 
     CUtilHTTPResponse*  m_pResponse{nullptr};
     IUtilHTTPCallbacks* m_Callbacks{nullptr};
@@ -715,11 +718,53 @@ public:
             SetField("Content-Type", contentType);
     }
 
+    void RebuildCurlHeaders()
+    {
+        if (m_CurlHeaders)
+        {
+            curl_slist_free_all(m_CurlHeaders);
+            m_CurlHeaders = nullptr;
+        }
+
+        for (const auto& [name, val] : m_RequestHeaders)
+        {
+            const std::string header = val.empty() ? std::format("{}:", name) : std::format("{}: {}", name, val);
+            m_CurlHeaders            = curl_slist_append(m_CurlHeaders, header.c_str());
+        }
+
+        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_HTTPHEADER, m_CurlHeaders);
+    }
+
     void SetField(const char* field, const char* value) override
     {
-        std::string header = std::format("{}: {}", field, value);
-        m_CurlHeaders      = curl_slist_append(m_CurlHeaders, header.c_str());
-        curl_easy_setopt(m_CurlEasyHandle, CURLOPT_HTTPHEADER, m_CurlHeaders);
+        if (!field || !field[0])
+            return;
+
+        // Avoid freeing the curl_slist while libcurl may still read it during transfer.
+        if (m_bRequesting || m_bResponding)
+            return;
+
+        const std::string      lowerField = ToLowerCase(field);
+        const std::string_view newValue   = value ? std::string_view(value) : std::string_view();
+
+        bool bUpdated = false;
+        for (auto& [existingName, existingValue] : m_RequestHeaders)
+        {
+            if (ToLowerCase(existingName) == lowerField)
+            {
+                existingName  = field;
+                existingValue = newValue;
+                bUpdated      = true;
+                break;
+            }
+        }
+
+        if (!bUpdated)
+        {
+            m_RequestHeaders.emplace_back(field, std::string(newValue));
+        }
+
+        RebuildCurlHeaders();
     }
 
     void SetRequireCertVerification(bool b) override
