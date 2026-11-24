@@ -5,6 +5,7 @@
 #include <curl/curl.h>
 
 #include <array>
+#include <cctype>
 #include <chrono>
 #include <exception>
 #include <filesystem>
@@ -551,6 +552,135 @@ static void AsyncTest(Module& module, bool stream)
     server.Finish();
 }
 
+static size_t CountRequestHeader(std::string_view request, std::string_view fieldName)
+{
+    const size_t headerEnd = request.find("\r\n\r\n");
+    if (headerEnd == std::string_view::npos)
+        return 0;
+
+    std::string lowerTarget;
+    lowerTarget.reserve(fieldName.size());
+    for (char c : fieldName)
+        lowerTarget.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+
+    size_t count = 0;
+    size_t pos   = request.find("\r\n");
+    while (pos != std::string_view::npos && pos < headerEnd)
+    {
+        const size_t lineStart = pos + 2;
+        const size_t lineEnd   = request.find("\r\n", lineStart);
+        if (lineEnd == std::string_view::npos || lineStart >= headerEnd)
+            break;
+
+        const std::string_view line  = request.substr(lineStart, lineEnd - lineStart);
+        const size_t           colon = line.find(':');
+        if (colon != std::string_view::npos)
+        {
+            std::string lowerLineName;
+            lowerLineName.reserve(colon);
+            for (char c : line.substr(0, colon))
+                lowerLineName.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+
+            if (lowerLineName == lowerTarget)
+                ++count;
+        }
+        pos = lineEnd;
+    }
+    return count;
+}
+
+static void RequestHeadersTest(Module& module)
+{
+    Client client(module);
+
+    // Default request should include exactly one default User-Agent header.
+    {
+        HttpServer server;
+        Results    results;
+        Request    request(client.value->CreateSyncRequest(server.Url("/get").c_str(), UtilHTTPMethod::Get, new Callbacks(results)));
+        Require(request != nullptr, "default header request creation failed");
+        request->SetTimeout(2);
+        request->Send();
+        Pump(client.value, results);
+        server.Finish();
+        SuccessfulResponse(results);
+        Equal(size_t{1}, CountRequestHeader(server.lastRequest, "User-Agent"), "default request must send one User-Agent");
+        Require(server.lastRequest.find("User-Agent: Mozilla/5.0") != std::string::npos, "default User-Agent missing");
+    }
+
+    // Overriding User-Agent, Host, and custom headers must replace existing values case-insensitively.
+    {
+        HttpServer server;
+        Results    results;
+        Request    request(client.value->CreateSyncRequest(server.Url("/get").c_str(), UtilHTTPMethod::Get, new Callbacks(results)));
+        Require(request != nullptr, "override header request creation failed");
+        request->SetField("User-Agent", "Half-Life");
+        request->SetField("Cache-Control", "max-age=60");
+        request->SetField("cache-control", "no-cache");
+        request->SetField("X-Custom", "first");
+        request->SetField("x-custom", "second");
+        request->SetField("Host", "override.test");
+        request->SetField(nullptr, "ignored");
+        request->SetField("", "ignored");
+        request->SetTimeout(2);
+        request->Send();
+        Pump(client.value, results);
+        server.Finish();
+        SuccessfulResponse(results);
+        Equal(size_t{1}, CountRequestHeader(server.lastRequest, "User-Agent"), "overridden User-Agent must not duplicate");
+        Require(server.lastRequest.find("User-Agent: Half-Life\r\n") != std::string::npos, "overridden User-Agent value mismatch");
+        Require(server.lastRequest.find("Mozilla/5.0") == std::string::npos, "default User-Agent must be replaced");
+        Equal(size_t{1}, CountRequestHeader(server.lastRequest, "Cache-Control"), "overridden Cache-Control must not duplicate");
+        Require(server.lastRequest.find("cache-control: no-cache\r\n") != std::string::npos, "overridden Cache-Control value mismatch");
+        Require(server.lastRequest.find("max-age=60") == std::string::npos, "old Cache-Control value must be replaced");
+        Equal(size_t{1}, CountRequestHeader(server.lastRequest, "X-Custom"), "overridden custom header must not duplicate");
+        Require(server.lastRequest.find("x-custom: second\r\n") != std::string::npos, "overridden custom header value mismatch");
+        Equal(size_t{1}, CountRequestHeader(server.lastRequest, "Host"), "overridden Host must not duplicate");
+        Require(server.lastRequest.find("Host: override.test\r\n") != std::string::npos, "overridden Host value mismatch");
+    }
+}
+
+static void ConcurrentStreamTest(Module& module)
+{
+    constexpr int                     RequestCount = 5;
+    HttpServer                        server(RequestCount);
+    Client                            client(module);
+    std::array<Results, RequestCount> results{};
+
+    for (int i = 0; i < RequestCount; ++i)
+    {
+        auto request = client.value->CreateAsyncStreamRequest(server.Url("/stream").c_str(), UtilHTTPMethod::Get, new Callbacks(results[i]));
+        Require(request != nullptr, "concurrent stream request creation failed");
+        request->SetField("User-Agent", "Half-Life");
+        request->SetField("Cache-Control", "no-cache");
+        client.value->AddToRequestPool(request);
+        request->SetTimeout(5);
+        request->Send();
+    }
+
+    const auto deadline = std::chrono::steady_clock::now() + 8s;
+    while (std::chrono::steady_clock::now() < deadline)
+    {
+        client.value->RunFrame();
+        int completed = 0;
+        for (const auto& item : results)
+            completed += item.completions;
+        if (completed == RequestCount)
+            break;
+        std::this_thread::sleep_for(1ms);
+    }
+
+    server.Finish();
+    for (const auto& item : results)
+    {
+        Equal(1, item.completions, "each concurrent stream request must complete once");
+        SuccessfulResponse(item);
+        Equal(std::string("hello world"), item.streamed, "concurrent streamed body");
+        Require(item.streamHeaderPresent, "concurrent stream headers must be ready");
+        Equal(1, item.destroyed, "concurrent stream callback must be destroyed once");
+    }
+}
+
 static void TransportErrorTest(Module& module)
 {
     // Reserve a port without listening so connection refusal is deterministic.
@@ -604,6 +734,10 @@ int wmain(int argc, wchar_t** argv)
             SyncTest(module, true, false);
         else if (scenario == L"HeaderBuffers")
             HeaderBufferTest(module);
+        else if (scenario == L"RequestHeaders")
+            RequestHeadersTest(module);
+        else if (scenario == L"ConcurrentStream")
+            ConcurrentStreamTest(module);
         else if (scenario == L"Put")
             PutTest(module);
         else if (scenario == L"Redirect")
